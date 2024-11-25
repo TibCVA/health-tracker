@@ -1,14 +1,59 @@
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Suivi Santé</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .done { background-color: #f0fff4; }
+        .streak-box {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        .calendar-day {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin: 2px;
+            font-size: 12px;
+        }
+        .calendar-day.completed {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .calendar-day.partial {
+            background-color: #FFA726;
+            color: white;
+        }
+        .item-card {
+            transition: all 0.3s ease;
+        }
+        .item-card:active {
+            transform: scale(0.98);
+        }
+        .checked {
+            animation: checkmark 0.3s ease-in-out;
+        }
+        @keyframes checkmark {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
     </style>
-        <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body class="bg-gray-50">
     <div id="app"></div>
@@ -16,156 +61,343 @@
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     <script type="text/babel">
-       const HealthTracker = () => {
-  const [activeTab, setActiveTab] = React.useState('supplements');
-  const [items, setItems] = React.useState(() => {
-    const saved = localStorage.getItem('healthItems');
-    return saved ? JSON.parse(saved) : {
-      supplements: {
-        morning: [
-          { id: 1, name: 'Bisglycinate 240mg', done: false },
-          { id: 2, name: 'Taurine 500mg', done: false },
-        ],
-        noon: [
-          { id: 3, name: 'Bisglycinate 160mg', done: false },
-          { id: 4, name: 'Omega 2 capsules', done: false },
-        ],
-        evening: [
-          { id: 5, name: 'Bisglycinate 160mg', done: false },
-          { id: 6, name: 'Omega 2 capsules', done: false },
-        ],
-      },
-      exercises: {
-        daily: [
-          { id: 7, name: 'Étirements bas/haut', details: '2x30s' },
-          { id: 8, name: 'Pompes scapulaires', details: '2x10' },
-          { id: 9, name: 'Thread needle', details: '2x10' },
-          { id: 10, name: 'Rentrée menton', details: '4x15' },
-          { id: 11, name: 'Respiration', details: '5min' },
-          { id: 12, name: 'Méditation', details: '30min' },
-          { id: 13, name: 'Vacuum', details: '3x15s' },
-        ],
-        alternating: [
-          { id: 14, name: 'Planche', details: '3x30s' },
-          { id: 15, name: 'Body pull', details: '3x10' },
-          { id: 16, name: 'Face pull', details: '3x10' },
-          { id: 17, name: 'Prone Y raise', details: '2x15' },
-          { id: 18, name: 'Bird dog', details: '3x10' },
-          { id: 19, name: 'Glute bridge', details: '3x12' },
-        ],
-      },
-    };
-  });
+        const HealthTracker = () => {
+            const [activeView, setActiveView] = React.useState('daily');
+            const [selectedDate, setSelectedDate] = React.useState(new Date());
+            const [items, setItems] = React.useState(() => {
+                const saved = localStorage.getItem(`items_${selectedDate.toISOString().split('T')[0]}`);
+                return saved ? JSON.parse(saved) : {
+                    supplements: {
+                        morning: [
+                            { id: 1, name: 'Bisglycinate 240mg', done: false },
+                            { id: 2, name: 'Taurine 500mg', done: false },
+                        ],
+                        noon: [
+                            { id: 3, name: 'Bisglycinate 160mg', done: false },
+                            { id: 4, name: 'Omega 2 capsules', done: false },
+                        ],
+                        evening: [
+                            { id: 5, name: 'Bisglycinate 160mg', done: false },
+                            { id: 6, name: 'Omega 2 capsules', done: false },
+                        ],
+                    },
+                    exercises: {
+                        daily: [
+                            { id: 7, name: 'Étirements bas/haut', details: '2x30s', done: false },
+                            { id: 8, name: 'Pompes scapulaires', details: '2x10', done: false },
+                            { id: 9, name: 'Thread needle', details: '2x10', done: false },
+                            { id: 10, name: 'Rentrée menton', details: '4x15', done: false },
+                            { id: 11, name: 'Respiration', details: '5min', done: false },
+                            { id: 12, name: 'Méditation', details: '30min', done: false },
+                            { id: 13, name: 'Vacuum', details: '3x15s', done: false },
+                        ],
+                        alternating: [
+                            { id: 14, name: 'Planche', details: '3x30s', done: false },
+                            { id: 15, name: 'Body pull', details: '3x10', done: false },
+                            { id: 16, name: 'Face pull', details: '3x10', done: false },
+                            { id: 17, name: 'Prone Y raise', details: '2x15', done: false },
+                            { id: 18, name: 'Bird dog', details: '3x10', done: false },
+                            { id: 19, name: 'Glute bridge', details: '3x12', done: false },
+                        ],
+                    },
+                };
+            });
 
-  React.useEffect(() => {
-    localStorage.setItem('healthItems', JSON.stringify(items));
-  }, [items]);
+            const [stats, setStats] = React.useState({
+                weeklyCompletion: 0,
+                currentStreak: 0,
+                bestStreak: 0
+            });
 
-  const toggleItem = (category, timing, id) => {
-    setItems(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [timing]: prev[category][timing].map(item =>
-          item.id === id ? { ...item, done: !item.done } : item
-        ),
-      },
-    }));
-  };
+            const [history, setHistory] = React.useState(() => {
+                const saved = localStorage.getItem('healthHistory');
+                return saved ? JSON.parse(saved) : {};
+            });
 
-  const addItem = (category, timing, name, details = '') => {
-    const newId = Math.max(...Object.values(items[category]).flat().map(i => i.id), 0) + 1;
-    setItems(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [timing]: [...prev[category][timing], { id: newId, name, details, done: false }],
-      },
-    }));
-  };
+            // Fonctions utilitaires
+            const formatDate = (date) => date.toISOString().split('T')[0];
 
-  const deleteItem = (category, timing, id) => {
-    setItems(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [timing]: prev[category][timing].filter(item => item.id !== id),
-      },
-    }));
-  };
+            React.useEffect(() => {
+                const dateKey = formatDate(selectedDate);
+                localStorage.setItem(`items_${dateKey}`, JSON.stringify(items));
+                localStorage.setItem('healthHistory', JSON.stringify(history));
+                
+                const completion = calculateDayCompletion();
+                setHistory(prev => ({
+                    ...prev,
+                    [dateKey]: completion
+                }));
+                
+                updateStats();
+            }, [items, selectedDate]);
 
-  const renderItem = (category, timing, item) => (
-    <div key={item.id} className="flex items-center p-2 border rounded mb-2">
-      <button
-        onClick={() => toggleItem(category, timing, item.id)}
-        className={`w-6 h-6 rounded-full border-2 mr-2 flex items-center justify-center
-          ${item.done ? 'bg-green-500 border-green-500' : 'border-gray-400'}`}
-      >
-        {item.done && <span className="text-white">✓</span>}
-      </button>
-      <div className="flex-grow">
-        <div>{item.name}</div>
-        {item.details && <div className="text-sm text-gray-500">{item.details}</div>}
-      </div>
-      <button
-        onClick={() => deleteItem(category, timing, item.id)}
-        className="text-red-500 text-sm px-2"
-      >
-        ×
-      </button>
-    </div>
-  );
+            const calculateDayCompletion = () => {
+                let total = 0;
+                let completed = 0;
 
-  return (
-    <div className="max-w-md mx-auto p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold">Suivi Santé</h1>
-        <div className="text-sm text-gray-500">{new Date().toLocaleDateString()}</div>
-      </div>
+                Object.values(items).forEach(category => {
+                    Object.values(category).forEach(subcategory => {
+                        subcategory.forEach(item => {
+                            total++;
+                            if (item.done) completed++;
+                        });
+                    });
+                });
 
-      <div className="flex mb-4 border-b">
-        <button
-          className={`px-4 py-2 ${activeTab === 'supplements' ? 'border-b-2 border-blue-500' : ''}`}
-          onClick={() => setActiveTab('supplements')}
-        >
-          Suppléments
-        </button>
-        <button
-          className={`px-4 py-2 ${activeTab === 'exercises' ? 'border-b-2 border-blue-500' : ''}`}
-          onClick={() => setActiveTab('exercises')}
-        >
-          Exercices
-        </button>
-      </div>
+                return total > 0 ? Math.round((completed / total) * 100) : 0;
+            };
 
-      {activeTab === 'supplements' && (
-        <div>
-          {Object.entries(items.supplements).map(([timing, timeItems]) => (
-            <div key={timing} className="mb-6">
-              <h2 className="font-semibold mb-2 capitalize">{timing}</h2>
-              {timeItems.map(item => renderItem('supplements', timing, item))}
-            </div>
-          ))}
-        </div>
-      )}
+            const getWeekData = () => {
+                const weekData = [];
+                const current = new Date(selectedDate);
+                current.setDate(current.getDate() - 6);
 
-      {activeTab === 'exercises' && (
-        <div>
-          {Object.entries(items.exercises).map(([type, typeItems]) => (
-            <div key={type} className="mb-6">
-              <h2 className="font-semibold mb-2">
-                {type === 'daily' ? 'Quotidien' : 'Un jour sur deux'}
-              </h2>
-              {typeItems.map(item => renderItem('exercises', type, item))}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+                for (let i = 0; i < 7; i++) {
+                    const date = formatDate(current);
+                    weekData.push({
+                        date,
+                        completion: history[date] || 0
+                    });
+                    current.setDate(current.getDate() + 1);
+                }
 
-ReactDOM.render(<HealthTracker />, document.getElementById('app'));
+                return weekData;
+            };
+
+            const updateStats = () => {
+                const weekData = getWeekData();
+                const weeklyCompletion = Math.round(
+                    weekData.reduce((acc, day) => acc + day.completion, 0) / 7
+                );
+
+                let currentStreak = 0;
+                let bestStreak = 0;
+                let tempStreak = 0;
+
+                Object.entries(history)
+                    .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+                    .forEach(([_, completion]) => {
+                        if (completion >= 80) {
+                            tempStreak++;
+                            if (tempStreak > bestStreak) bestStreak = tempStreak;
+                        } else {
+                            tempStreak = 0;
+                        }
+                    });
+
+                currentStreak = tempStreak;
+
+                setStats({ weeklyCompletion, currentStreak, bestStreak });
+            };
+
+            const toggleItem = (category, subcategory, id) => {
+                setItems(prev => ({
+                    ...prev,
+                    [category]: {
+                        ...prev[category],
+                        [subcategory]: prev[category][subcategory].map(item =>
+                            item.id === id ? { ...item, done: !item.done } : item
+                        ),
+                    },
+                }));
+            };
+
+            const renderDailyView = () => (
+                <div className="space-y-4">
+                    {/* Onglet Suppléments */}
+                    <div className="space-y-4">
+                        {Object.entries(items.supplements).map(([timing, timeItems]) => (
+                            <div key={timing} className="bg-white rounded-lg shadow p-4">
+                                <h3 className="font-bold text-lg capitalize mb-3">{timing}</h3>
+                                <div className="space-y-2">
+                                    {timeItems.map(item => (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => toggleItem('supplements', timing, item.id)}
+                                            className={`flex items-center p-3 border rounded-lg item-card cursor-pointer
+                                                ${item.done ? 'done' : ''}`}
+                                        >
+                                            <div className={`w-6 h-6 rounded-full border-2 mr-3 flex items-center justify-center
+                                                ${item.done ? 'bg-green-500 border-green-500 checked' : 'border-gray-300'}`}
+                                            >
+                                                {item.done && <span className="text-white">✓</span>}
+                                            </div>
+                                            <span>{item.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Onglet Exercices */}
+                    <div className="space-y-4">
+                        {Object.entries(items.exercises).map(([type, exercises]) => (
+                            <div key={type} className="bg-white rounded-lg shadow p-4">
+                                <h3 className="font-bold text-lg mb-3">
+                                    {type === 'daily' ? 'Exercices Quotidiens' : 'Exercices (1 jour sur 2)'}
+                                </h3>
+                                <div className="space-y-2">
+                                    {exercises.map(item => (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => toggleItem('exercises', type, item.id)}
+                                            className={`flex items-center p-3 border rounded-lg item-card cursor-pointer
+                                                ${item.done ? 'done' : ''}`}
+                                        >
+                                            <div className={`w-6 h-6 rounded-full border-2 mr-3 flex items-center justify-center
+                                                ${item.done ? 'bg-green-500 border-green-500 checked' : 'border-gray-300'}`}
+                                            >
+                                                {item.done && <span className="text-white">✓</span>}
+                                            </div>
+                                            <div>
+                                                <div>{item.name}</div>
+                                                <div className="text-sm text-gray-500">{item.details}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            const renderStatsView = () => (
+                <div className="space-y-4">
+                    <div className="bg-white rounded-lg shadow p-4">
+                        <h3 className="font-bold text-lg mb-4">Statistiques</h3>
+                        
+                        <div className="grid grid-cols-3 gap-4 mb-6">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-green-600">
+                                    {stats.weeklyCompletion}%
+                                </div>
+                                <div className="text-sm text-gray-500">Cette semaine</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-600">
+                                    {stats.currentStreak}
+                                </div>
+                                <div className="text-sm text-gray-500">Série actuelle</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-purple-600">
+                                    {stats.bestStreak}
+                                </div>
+                                <div className="text-sm text-gray-500">Record</div>
+                            </div>
+                        </div>
+
+                        <div className="h-48">
+                            <canvas id="weekChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            React.useEffect(() => {
+                if (activeView === 'stats') {
+                    const ctx = document.getElementById('weekChart');
+                    const weekData = getWeekData();
+                    
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: weekData.map(d => d.date),
+                            datasets: [{
+                                label: 'Complétion (%)',
+                                data: weekData.map(d => d.completion),
+                                borderColor: '#4CAF50',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100
+                                }
+                            }
+                        }
+                    });
+                }
+            }, [activeView, history]);
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen bg-gray-50">
+                    {/* En-tête */}
+                    <div className="bg-white shadow-sm">
+                        <div className="p-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <h1 className="text-xl font-bold">Suivi Santé</h1>
+                                <div className="flex space-x-4">
+                                    <button
+                                        onClick={() => setActiveView(activeView === 'daily' ? 'stats' : 'daily')}
+                                        className="text-gray-600"
+                                    >
+                                        {activeView === 'daily' ? '📊' : '📝'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Sélecteur de date */}
+                            <div className="flex justify-between items-center">
+                                <button
+                                    onClick={() => {
+                                        const newDate = new Date(selectedDate);
+                                        newDate.setDate(newDate.getDate() - 1);
+                                        setSelectedDate(newDate);
+                                    }}
+                                    className="p-2"
+                                >
+                                    ←
+                                </button>
+                                <span className="font-medium">
+                                    {selectedDate.toLocaleDateString('fr-FR', {
+                                        weekday: 'long',
+                                        day: 'numeric',
+                                        month: 'long'
+                                    })}
+                                </span>
+                                <button
+                                    onClick={() => {
+                                        const newDate = new Date(selectedDate);
+                                        newDate.setDate(newDate.getDate() + 1);
+                                        setSelectedDate(newDate);
+                                    }}
+                                    className="p-2"
+                                >
+                                    →
+                                </button>
+                            </div>
+
+                            {/* Barre de progression */}
+                            <div className="mt-4">
+                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-green-500 progress-bar"
+                                        style={{ width: `${calculateDayCompletion()}%` }}
+                                    ></div>
+                                </div>
+                                <div className="text-center text-sm text-gray-500 mt-1">
+                                    {calculateDayCompletion()}% complété
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Contenu principal */}
+                    <div className="p-4">
+                        {activeView === 'daily' ? renderDailyView() : renderStatsView()}
+                    </div>
+                </div>
+            );
+        };
+
+        // Rendu de l'application
+        ReactDOM.render(<HealthTracker />, document.getElementById('app'));
     </script>
 </body>
 </html>
