@@ -145,7 +145,6 @@ const HealthTracker = () => {
         const diff = Math.floor((date - start) / (1000 * 60 * 60 * 24));
         return diff % 2 === 0;
     };
-```javascript
     const formatDate = (date) => date.toISOString().split('T')[0];
 
     React.useEffect(() => {
@@ -244,7 +243,6 @@ const HealthTracker = () => {
             }));
         });
     };
-```javascript
     const toggleItem = (category, subcategory, id) => {
         if (category === 'exercises' && subcategory === 'alternes' && !isAlternateDay(selectedDate)) {
             return;
@@ -524,7 +522,6 @@ const renderStatsView = () => (
             </button>
         </div>
     );
-
     React.useEffect(() => {
         if (activeView === 'stats') {
             ['supplements', 'exercises'].forEach(category => {
@@ -555,7 +552,6 @@ const renderStatsView = () => (
             });
         }
     }, [activeView, history]);
-```javascript
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gray-50">
             <div className="bg-white shadow-sm">
