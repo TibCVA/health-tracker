@@ -20,6 +20,24 @@
         .progress-bar {
             transition: width 0.3s ease;
         }
+        .calendar-day {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin: 2px;
+            font-size: 12px;
+        }
+        .calendar-day.completed {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .calendar-day.partial {
+            background-color: #FFA726;
+            color: white;
+        }
         .item-card {
             transition: all 0.3s ease;
         }
@@ -62,8 +80,7 @@
     <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <script type="text/babel">​​​​​​​​​​​​​​​​
-```javascript
+    <script type="text/babel">
 const HealthTracker = () => {
     const [activeView, setActiveView] = React.useState('daily');
     const [activeTab, setActiveTab] = React.useState('supplements');
@@ -333,8 +350,7 @@ const HealthTracker = () => {
             link.click();
         }
     };
-```javascript
-    const renderEditModal = () => {
+const renderEditModal = () => {
         if (!editingItem) return null;
         
         const [itemName, setItemName] = React.useState(editingItem.item.name);
@@ -466,8 +482,7 @@ const HealthTracker = () => {
             </div>
         );
     };
-```javascript
-    const renderStatsView = () => (
+const renderStatsView = () => (
         <div className="space-y-4">
             {['supplements', 'exercises'].map(category => (
                 <div key={category} className="bg-white rounded-lg shadow p-4">
@@ -543,7 +558,6 @@ const HealthTracker = () => {
 ```javascript
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gray-50">
-            {/* En-tête */}
             <div className="bg-white shadow-sm">
                 <div className="p-4">
                     <div className="flex justify-between items-center mb-4">
@@ -558,7 +572,6 @@ const HealthTracker = () => {
                         </div>
                     </div>
 
-                    {/* Sélecteur de date */}
                     <div className="flex justify-between items-center">
                         <button
                             onClick={() => {
@@ -592,7 +605,6 @@ const HealthTracker = () => {
 
                     {activeView === 'daily' && (
                         <div className="mt-4">
-                            {/* Onglets */}
                             <div className="flex mb-4">
                                 <button
                                     className={`flex-1 py-2 ${activeTab === 'supplements' ? 'border-b-2 border-blue-500' : ''}`}
@@ -608,7 +620,6 @@ const HealthTracker = () => {
                                 </button>
                             </div>
 
-                            {/* Barre de progression */}
                             <div className="space-y-2">
                                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                                     <div
@@ -625,18 +636,15 @@ const HealthTracker = () => {
                 </div>
             </div>
 
-            {/* Contenu principal */}
             <div className="p-4">
                 {activeView === 'daily' ? renderDailyView() : renderStatsView()}
             </div>
 
-            {/* Modal d'édition */}
             {showEditModal && renderEditModal()}
         </div>
     );
 };
 
-// Rendu de l'application
 ReactDOM.render(<HealthTracker />, document.getElementById('app'));
     </script>
 </body>
