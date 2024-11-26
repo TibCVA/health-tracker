@@ -65,14 +65,22 @@
    <script type="text/babel">
    window.addEventListener('load', function() {
        console.log('Window loaded');
-       console.log('React:', React);
-       console.log('ReactDOM:', ReactDOM);
-});
-
+       if (!React) {
+           console.error('React not loaded');
+           return;
+       }
+       if (!ReactDOM) {
+           console.error('ReactDOM not loaded');
+           return;
+       }
+       console.log('React and ReactDOM loaded successfully');
+   });
+   
    window.addEventListener('error', function(e) {
        console.log('Error:', e.message);
-       console.log('Stack:', e.error?.stack);
+       console.log('Stack:', e.error && e.error.stack);
    });
+      
        console.log('Démarrage de l\'application');
 
        window.onerror = function(msg, url, lineNo, columnNo, error) {
