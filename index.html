@@ -211,9 +211,9 @@
                    for (let i = 0; i < 7; i++) {
                        const date = formatDate(current);
                        weekData.push({
-                           date,
-                           completion: history[date]?.[category] || 0
-                       });
+                            date,
+                            completion: (history[date] && history[date][category]) || 0
+                        });
                        current.setDate(current.getDate() + 1);
                    }
 
