@@ -59,10 +59,20 @@
 </head>
 <body class="bg-gray-50">
    <div id="app"></div>
-   <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
-   <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+   <script src="https://unpkg.com/react@16.14.0/umd/react.production.min.js"></script>
+   <script src="https://unpkg.com/react-dom@16.14.0/umd/react-dom.production.min.js"></script>
    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
    <script type="text/babel">
+   window.addEventListener('load', function() {
+       console.log('Window loaded');
+       console.log('React:', React);
+       console.log('ReactDOM:', ReactDOM);
+});
+
+   window.addEventListener('error', function(e) {
+       console.log('Error:', e.message);
+       console.log('Stack:', e.error?.stack);
+   });
        console.log('Démarrage de l\'application');
 
        window.onerror = function(msg, url, lineNo, columnNo, error) {
