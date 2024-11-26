@@ -102,7 +102,11 @@
 
                const [activeView, setActiveView] = React.useState('daily');
                const [activeTab, setActiveTab] = React.useState('supplements');
-               const [selectedDate, setSelectedDate] = React.useState(new Date());
+               const [selectedDate, setSelectedDate] = React.useState(() => {
+                   const today = new Date();
+                   today.setHours(0, 0, 0, 0);
+                   return today;
+               });
                const [showEditModal, setShowEditModal] = React.useState(false);
                const [editingItem, setEditingItem] = React.useState(null);
                const [editItemName, setEditItemName] = React.useState('');
@@ -134,16 +138,17 @@
                            { id: 11, name: 'Respiration', details: '5min', done: false },
                            { id: 12, name: 'Méditation', details: '30min', done: false },
                            { id: 13, name: 'Stabilité sur 1 jambe', details: '3x30 sec', done: false },
-                           { id: 14, name: 'Vacuum', details: '3x15s', done: false }
+                           { id: 14, name: 'Vélo', details: '30 min+', done: false },
+                           { id: 15, name: 'Vacuum', details: '3x15s', done: false }
                        ],
                        alternes: [
-                           { id: 15, name: 'Planche', details: '3x30s', done: false },
-                           { id: 16, name: 'Body pull', details: '3x10', done: false },
-                           { id: 17, name: 'Face pull', details: '3x10', done: false },
-                           { id: 18, name: 'Prone Y raise', details: '2x15', done: false },
-                           { id: 19, name: 'Bird dog', details: '3x10', done: false },
-                           { id: 20, name: 'Clamshell', details: '3x15', done: false },
-                           { id: 21, name: 'Glute bridge', details: '3x12', done: false }
+                           { id: 16, name: 'Planche', details: '3x30s', done: false },
+                           { id: 17, name: 'Body pull', details: '3x10', done: false },
+                           { id: 18, name: 'Face pull', details: '3x10', done: false },
+                           { id: 19, name: 'Prone Y raise', details: '2x15', done: false },
+                           { id: 20, name: 'Bird dog', details: '3x10', done: false },
+                           { id: 21, name: 'Clamshell', details: '3x15', done: false },
+                           { id: 22, name: 'Glute bridge', details: '3x12', done: false }
                        ]
                    }
                };
@@ -308,23 +313,34 @@
                // Ajoutez cette nouvelle fonction juste après saveEdit
                const propagateChangesToFutureDays = async (category, subcategory, item) => {
                    const currentDateKey = formatDate(selectedDate);
+                   const today = new Date();
+                   today.setHours(0, 0, 0, 0);
+                   
                    const allKeys = Object.keys(localStorage)
                        .filter(key => key.startsWith('items_'))
-                       .filter(key => key > `items_${currentDateKey}`);
-               
+                       .filter(key => {
+                           const dateStr = key.replace('items_', '');
+                           const itemDate = new Date(dateStr);
+                           return itemDate > today;  // Ne modifie que les jours futurs
+                       });
+                   
                    for (const key of allKeys) {
                        const futureItems = JSON.parse(localStorage.getItem(key));
                        let modified = false;
-               
+                       
                        if (futureItems[category]?.[subcategory]) {
                            futureItems[category][subcategory] = futureItems[category][subcategory].map(existingItem => {
                                if (existingItem.id === item.id) {
                                    modified = true;
-                                   return { ...existingItem, name: item.name, [category === 'supplements' ? 'dose' : 'details']: item[category === 'supplements' ? 'dose' : 'details'] };
+                                   return { 
+                                       ...existingItem, 
+                                       name: item.name, 
+                                       [category === 'supplements' ? 'dose' : 'details']: item[category === 'supplements' ? 'dose' : 'details'] 
+                                   };
                                }
                                return existingItem;
                            });
-               
+                           
                            if (modified) {
                                localStorage.setItem(key, JSON.stringify(futureItems));
                            }
@@ -545,26 +561,20 @@
                                    {category === 'supplements' ? 'Suppléments' : 'Exercices'}
                                </h3>
                                
-                               <div className="grid grid-cols-3 gap-4 mb-6">
-                                   <div className="text-center">
-                                       <div className="text-2xl font-bold text-green-600">
-                                           {stats[category].weeklyCompletion}%
-                                       </div>
-                                       <div className="text-sm text-gray-500">Cette semaine</div>
-                                   </div>
-                                   <div className="text-center">
-                                       <div className="text-2xl font-bold text-blue-600">
-                                           {stats[category].currentStreak}
-                                       </div>
-                                       <div className="text-sm text-gray-500">Série actuelle</div>
-                                   </div>
-                                   <div className="text-center">
-                                       <div className="text-2xl font-bold text-purple-600">
-                                           {stats[category].bestStreak}
-                                       </div>
-                                       <div className="text-sm text-gray-500">Record</div>
-                                   </div>
-                               </div>
+                               <div className="grid grid-cols-2 gap-4 mb-6">
+                                     <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                         <div className="text-2xl font-bold text-green-600">
+                                             {stats[category].weeklyCompletion}%
+                                         </div>
+                                         <div className="text-sm text-gray-500">Cette semaine</div>
+                                     </div>
+                                     <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                         <div className="text-2xl font-bold text-blue-600">
+                                             {stats[category].currentStreak}
+                                         </div>
+                                         <div className="text-sm text-gray-500">Série actuelle</div>
+                                     </div>
+                                 </div>
 
                                <div className="h-48">
                                    <canvas id={`${category}Chart`}></canvas>
@@ -598,17 +608,47 @@
                                    }]
                                },
                                options: {
-                                   responsive: true,
-                                   scales: {
-                                       y: {
-                                           beginAtZero: true,
-                                           max: 100
-                                       }
-                                   }
-                               }
-                           });
-                       });
-                   }
+                                  responsive: true,
+                                  maintainAspectRatio: false,
+                                  scales: {
+                                      y: {
+                                          beginAtZero: true,
+                                          max: 100,
+                                          grid: {
+                                              display: true
+                                          }
+                                      },
+                                      x: {
+                                          grid: {
+                                              display: false
+                                          }
+                                      }
+                                  },
+                                  plugins: {
+                                      legend: {
+                                          display: false
+                                      },
+                                      tooltip: {
+                                          enabled: true
+                                      },
+                                      navigation: {
+                                          enabled: false
+                                      }
+                                  },
+                                  elements: {
+                                      point: {
+                                          radius: 4,
+                                          hoverRadius: 6
+                                      },
+                                      line: {
+                                          tension: 0.3
+                                      }
+                                  },
+                                  interaction: {
+                                      intersect: false,
+                                      mode: 'index'
+                                  }
+                              }
                }, [activeView, history]);
                return (
                    <div className="max-w-md mx-auto min-h-screen bg-gray-50">
