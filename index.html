@@ -312,38 +312,39 @@
                
                // Ajoutez cette nouvelle fonction juste après saveEdit
                const propagateChangesToFutureDays = async (category, subcategory, item) => {
-                   const currentDateKey = formatDate(selectedDate);
-                   const today = new Date();
-                   today.setHours(0, 0, 0, 0);
+                   const currentDateKey = formatDate(new Date());  // Utiliser la date actuelle comme référence
                    
                    const allKeys = Object.keys(localStorage)
                        .filter(key => key.startsWith('items_'))
                        .filter(key => {
                            const dateStr = key.replace('items_', '');
-                           const itemDate = new Date(dateStr);
-                           return itemDate > today;  // Ne modifie que les jours futurs
+                           return dateStr > currentDateKey;  // Ne modifie que les jours futurs
                        });
                    
                    for (const key of allKeys) {
                        const futureItems = JSON.parse(localStorage.getItem(key));
-                       let modified = false;
-                       
                        if (futureItems[category]?.[subcategory]) {
-                           futureItems[category][subcategory] = futureItems[category][subcategory].map(existingItem => {
-                               if (existingItem.id === item.id) {
-                                   modified = true;
-                                   return { 
-                                       ...existingItem, 
-                                       name: item.name, 
-                                       [category === 'supplements' ? 'dose' : 'details']: item[category === 'supplements' ? 'dose' : 'details'] 
-                                   };
-                               }
-                               return existingItem;
-                           });
-                           
-                           if (modified) {
-                               localStorage.setItem(key, JSON.stringify(futureItems));
+                           // Si c'est un nouvel élément, l'ajouter
+                           if (editingItem.isNew) {
+                               futureItems[category][subcategory].push({ 
+                                   ...item, 
+                                   done: false 
+                               });
+                           } else {
+                               // Sinon modifier l'élément existant
+                               futureItems[category][subcategory] = futureItems[category][subcategory].map(existingItem => {
+                                   if (existingItem.id === item.id) {
+                                       return { 
+                                           ...existingItem, 
+                                           name: item.name, 
+                                           [category === 'supplements' ? 'dose' : 'details']: item[category === 'supplements' ? 'dose' : 'details'],
+                                           done: false 
+                                       };
+                                   }
+                                   return existingItem;
+                               });
                            }
+                           localStorage.setItem(key, JSON.stringify(futureItems));
                        }
                    }
                };
@@ -379,6 +380,7 @@
                };
 
                const deleteItem = (category, subcategory, id) => {
+                   // Supprimer l'item du jour actuel
                    setItems(prev => ({
                        ...prev,
                        [category]: {
@@ -386,6 +388,21 @@
                            [subcategory]: prev[category][subcategory].filter(item => item.id !== id),
                        },
                    }));
+               
+                   // Propager la suppression aux jours futurs
+                   const currentDateKey = formatDate(new Date());
+                   const futureKeys = Object.keys(localStorage)
+                       .filter(key => key.startsWith('items_'))
+                       .filter(key => key.replace('items_', '') > currentDateKey);
+               
+                   futureKeys.forEach(key => {
+                       const futureItems = JSON.parse(localStorage.getItem(key));
+                       if (futureItems[category]?.[subcategory]) {
+                           futureItems[category][subcategory] = futureItems[category][subcategory]
+                               .filter(item => item.id !== id);
+                           localStorage.setItem(key, JSON.stringify(futureItems));
+                       }
+                   });
                };
 
                const exportToCsv = () => {
@@ -596,43 +613,78 @@
                            const ctx = document.getElementById(`${category}Chart`);
                            const weekData = getWeekData(category);
                            
-                           new Chart(ctx, {
+                           // Détruire le graphique existant s'il existe
+                           if (window.myCharts && window.myCharts[category]) {
+                               window.myCharts[category].destroy();
+                           }
+               
+                           // Initialiser l'objet pour stocker les instances de graphiques
+                           if (!window.myCharts) window.myCharts = {};
+               
+                           window.myCharts[category] = new Chart(ctx, {
                                type: 'line',
                                data: {
-                                   labels: weekData.map(d => d.date),
+                                   labels: weekData.map(d => new Date(d.date).toLocaleDateString('fr-FR', {
+                                       weekday: 'short',
+                                       day: 'numeric',
+                                       month: 'short'
+                                   })),
                                    datasets: [{
                                        label: 'Complétion (%)',
                                        data: weekData.map(d => d.completion),
                                        borderColor: category === 'supplements' ? '#4CAF50' : '#2196F3',
-                                       tension: 0.1
+                                       backgroundColor: category === 'supplements' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(33, 150, 243, 0.1)',
+                                       fill: true,
+                                       tension: 0.3
                                    }]
                                },
                                options: {
                                    responsive: true,
                                    maintainAspectRatio: false,
-                                   scales: {
-                                       y: {
-                                           beginAtZero: true,
-                                           max: 100,
-                                           grid: {
-                                               display: true
-                                           }
-                                       },
-                                       x: {
-                                           grid: {
-                                               display: false
-                                           }
-                                       }
+                                   interaction: {
+                                       mode: 'nearest',
+                                       intersect: false
                                    },
                                    plugins: {
                                        legend: {
                                            display: false
                                        },
                                        tooltip: {
-                                           enabled: true
+                                           enabled: true,
+                                           mode: 'index',
+                                           intersect: false,
+                                           callbacks: {
+                                               label: function(context) {
+                                                   return `${context.parsed.y}%`;
+                                               }
+                                           }
+                                       }
+                                   },
+                                   scales: {
+                                       x: {
+                                           grid: {
+                                               display: false
+                                           },
+                                           ticks: {
+                                               maxRotation: 0,
+                                               autoSkip: false,
+                                               font: {
+                                                   size: 11
+                                               }
+                                           }
                                        },
-                                       navigation: {
-                                           enabled: false
+                                       y: {
+                                           beginAtZero: true,
+                                           max: 100,
+                                           ticks: {
+                                               callback: function(value) {
+                                                   return value + '%';
+                                               },
+                                               stepSize: 20
+                                           },
+                                           grid: {
+                                               color: 'rgba(0, 0, 0, 0.05)'
+                                           }
                                        }
                                    },
                                    elements: {
@@ -641,12 +693,8 @@
                                            hoverRadius: 6
                                        },
                                        line: {
-                                           tension: 0.3
+                                           borderWidth: 2
                                        }
-                                   },
-                                   interaction: {
-                                       intersect: false,
-                                       mode: 'index'
                                    }
                                }
                            });
