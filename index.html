@@ -347,15 +347,15 @@
                    }
                };
 
+               React.useEffect(() => {
+                   if (editingItem) {
+                       setEditItemName(editingItem.item.name);
+                       setEditItemDetails(editingItem.item.dose || editingItem.item.details || '');
+                   }
+               }, [editingItem]);
+               
                const renderEditModal = () => {
                    if (!editingItem) return null;
-               
-                   React.useEffect(() => {
-                       if (editingItem) {
-                           setEditItemName(editingItem.item.name);
-                           setEditItemDetails(editingItem.item.dose || editingItem.item.details || '');
-                       }
-                   }, [editingItem]);
                
                    return (
                        <div className="modal">
