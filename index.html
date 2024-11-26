@@ -111,16 +111,20 @@
                const defaultItems = {
                    supplements: {
                        matin: [
-                           { id: 1, name: 'Bisglycinate', dose: '240mg', done: false },
-                           { id: 2, name: 'Taurine', dose: '500mg', done: false }
+                           { id: 1, name: 'Bisglycinate', dose: '3 gélules - 240mg', done: false },
+                           { id: 2, name: 'Taurine', dose: '1 gélule - 500mg', done: false },
+                           { id: 3, name: 'Vitamine D3', dose: '4 gélules - 4000UI', done: false },
                        ],
                        midi: [
-                           { id: 3, name: 'Bisglycinate', dose: '160mg', done: false },
-                           { id: 4, name: 'Omega', dose: '2 capsules', done: false }
+                           { id: 4, name: 'Bisglycinate', dose: '2 gélules - 160mg', done: false },
+                           { id: 5, name: 'Omega', dose: '2 capsules', done: false }
+                       ],
+                      16h: [
+                           { id: 6, name: 'Taurine', dose: '1 gélule - 500mg', done: false },
                        ],
                        soir: [
-                           { id: 5, name: 'Bisglycinate', dose: '160mg', done: false },
-                           { id: 6, name: 'Omega', dose: '2 capsules', done: false }
+                           { id: 7, name: 'Bisglycinate', dose: '2 gélules - 160mg', done: false },
+                           { id: 8, name: 'Omega', dose: '2 capsules', done: false }
                        ]
                    },
                    exercises: {
@@ -131,15 +135,17 @@
                            { id: 10, name: 'Rentrée menton', details: '4x15', done: false },
                            { id: 11, name: 'Respiration', details: '5min', done: false },
                            { id: 12, name: 'Méditation', details: '30min', done: false },
-                           { id: 13, name: 'Vacuum', details: '3x15s', done: false }
+                           { id: 13, name: 'Stabilité sur 1 jambe', details: '3x30 sec', done: false },
+                           { id: 14, name: 'Vacuum', details: '3x15s', done: false }
                        ],
                        alternes: [
-                           { id: 14, name: 'Planche', details: '3x30s', done: false },
-                           { id: 15, name: 'Body pull', details: '3x10', done: false },
-                           { id: 16, name: 'Face pull', details: '3x10', done: false },
-                           { id: 17, name: 'Prone Y raise', details: '2x15', done: false },
-                           { id: 18, name: 'Bird dog', details: '3x10', done: false },
-                           { id: 19, name: 'Glute bridge', details: '3x12', done: false }
+                           { id: 15, name: 'Planche', details: '3x30s', done: false },
+                           { id: 16, name: 'Body pull', details: '3x10', done: false },
+                           { id: 17, name: 'Face pull', details: '3x10', done: false },
+                           { id: 18, name: 'Prone Y raise', details: '2x15', done: false },
+                           { id: 19, name: 'Bird dog', details: '3x10', done: false },
+                           { id: 20, name: 'Clamshell', details: '3x15', done: false },
+                           { id: 21, name: 'Glute bridge', details: '3x12', done: false }
                        ]
                    }
                };
@@ -284,17 +290,48 @@
                };
 
                const saveEdit = (editedItem) => {
-                   setItems(prev => ({
-                       ...prev,
-                       [editingItem.category]: {
-                           ...prev[editingItem.category],
-                           [editingItem.subcategory]: prev[editingItem.category][editingItem.subcategory].map(item =>
-                               item.id === editingItem.item.id ? { ...item, ...editedItem } : item
-                           ),
-                       },
-                   }));
+                   setItems(prev => {
+                       const newItems = {
+                           ...prev,
+                           [editingItem.category]: {
+                               ...prev[editingItem.category],
+                               [editingItem.subcategory]: prev[editingItem.category][editingItem.subcategory].map(item =>
+                                   item.id === editingItem.item.id ? { ...item, ...editedItem } : item
+                               ),
+                           },
+                       };
+                       propagateChangesToFutureDays(editingItem.category, editingItem.subcategory, editedItem);
+                       return newItems;
+                   });
                    setShowEditModal(false);
                    setEditingItem(null);
+               };
+               
+               // Ajoutez cette nouvelle fonction juste après saveEdit
+               const propagateChangesToFutureDays = async (category, subcategory, item) => {
+                   const currentDateKey = formatDate(selectedDate);
+                   const allKeys = Object.keys(localStorage)
+                       .filter(key => key.startsWith('items_'))
+                       .filter(key => key > `items_${currentDateKey}`);
+               
+                   for (const key of allKeys) {
+                       const futureItems = JSON.parse(localStorage.getItem(key));
+                       let modified = false;
+               
+                       if (futureItems[category]?.[subcategory]) {
+                           futureItems[category][subcategory] = futureItems[category][subcategory].map(existingItem => {
+                               if (existingItem.id === item.id) {
+                                   modified = true;
+                                   return { ...existingItem, name: item.name, [category === 'supplements' ? 'dose' : 'details']: item[category === 'supplements' ? 'dose' : 'details'] };
+                               }
+                               return existingItem;
+                           });
+               
+                           if (modified) {
+                               localStorage.setItem(key, JSON.stringify(futureItems));
+                           }
+                       }
+                   }
                };
 
                const addNewItem = (category, subcategory) => {
