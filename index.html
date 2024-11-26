@@ -608,50 +608,51 @@
                                    }]
                                },
                                options: {
-                                  responsive: true,
-                                  maintainAspectRatio: false,
-                                  scales: {
-                                      y: {
-                                          beginAtZero: true,
-                                          max: 100,
-                                          grid: {
-                                              display: true
-                                          }
-                                      },
-                                      x: {
-                                          grid: {
-                                              display: false
-                                          }
-                                      }
-                                  },
-                                  plugins: {
-                                      legend: {
-                                          display: false
-                                      },
-                                      tooltip: {
-                                          enabled: true
-                                      },
-                                      navigation: {
-                                          enabled: false
-                                      }
-                                  },
-                                  elements: {
-                                      point: {
-                                          radius: 4,
-                                          hoverRadius: 6
-                                      },
-                                      line: {
-                                          tension: 0.3
-                                      }
-                                  },
-                                  interaction: {
-                                      intersect: false,
-                                      mode: 'index'
-                                  }
-                              }
-                                                         });
-                                                     });
-                                                 }
+                                   responsive: true,
+                                   maintainAspectRatio: false,
+                                   scales: {
+                                       y: {
+                                           beginAtZero: true,
+                                           max: 100,
+                                           grid: {
+                                               display: true
+                                           }
+                                       },
+                                       x: {
+                                           grid: {
+                                               display: false
+                                           }
+                                       }
+                                   },
+                                   plugins: {
+                                       legend: {
+                                           display: false
+                                       },
+                                       tooltip: {
+                                           enabled: true
+                                       },
+                                       navigation: {
+                                           enabled: false
+                                       }
+                                   },
+                                   elements: {
+                                       point: {
+                                           radius: 4,
+                                           hoverRadius: 6
+                                       },
+                                       line: {
+                                           tension: 0.3
+                                       }
+                                   },
+                                   interaction: {
+                                       intersect: false,
+                                       mode: 'index'
+                                   }
+                               }
+                           });
+                       });
+                   }
+               }, [activeView, history]);
                return (
                    <div className="max-w-md mx-auto min-h-screen bg-gray-50">
                        <div className="bg-white shadow-sm">
