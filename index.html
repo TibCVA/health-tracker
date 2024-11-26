@@ -83,6 +83,8 @@
                const [selectedDate, setSelectedDate] = React.useState(new Date());
                const [showEditModal, setShowEditModal] = React.useState(false);
                const [editingItem, setEditingItem] = React.useState(null);
+               const [editItemName, setEditItemName] = React.useState('');
+               const [editItemDetails, setEditItemDetails] = React.useState('');
 
                const defaultItems = {
                    supplements: {
@@ -347,12 +349,14 @@
 
                const renderEditModal = () => {
                    if (!editingItem) return null;
-                   
-                   const [itemName, setItemName] = React.useState(editingItem.item.name);
-                   const [itemDetails, setItemDetails] = React.useState(
-                       editingItem.item.dose || editingItem.item.details || ''
-                   );
-
+               
+                   React.useEffect(() => {
+                       if (editingItem) {
+                           setEditItemName(editingItem.item.name);
+                           setEditItemDetails(editingItem.item.dose || editingItem.item.details || '');
+                       }
+                   }, [editingItem]);
+               
                    return (
                        <div className="modal">
                            <div className="modal-content">
@@ -364,8 +368,8 @@
                                        <label className="block text-sm font-medium mb-1">Nom</label>
                                        <input
                                            type="text"
-                                           value={itemName}
-                                           onChange={(e) => setItemName(e.target.value)}
+                                           value={editItemName}
+                                           onChange={(e) => setEditItemName(e.target.value)}
                                            className="w-full p-2 border rounded"
                                        />
                                    </div>
@@ -375,8 +379,8 @@
                                        </label>
                                        <input
                                            type="text"
-                                           value={itemDetails}
-                                           onChange={(e) => setItemDetails(e.target.value)}
+                                           value={editItemDetails}
+                                           onChange={(e) => setEditItemDetails(e.target.value)}
                                            className="w-full p-2 border rounded"
                                        />
                                    </div>
@@ -394,8 +398,8 @@
                                            onClick={() => {
                                                const editedItem = {
                                                    ...editingItem.item,
-                                                   name: itemName,
-                                                   [editingItem.category === 'supplements' ? 'dose' : 'details']: itemDetails
+                                                   name: editItemName,
+                                                   [editingItem.category === 'supplements' ? 'dose' : 'details']: editItemDetails
                                                };
                                                editingItem.isNew ? saveNewItem(editedItem) : saveEdit(editedItem);
                                            }}
